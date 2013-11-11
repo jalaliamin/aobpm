@@ -1,0 +1,142 @@
+/*
+ * Copyright (c) 2004-2012 The YAWL Foundation. All rights reserved.
+ * The YAWL Foundation is a collaboration of individuals and
+ * organisations who are committed to improving workflow technology.
+ *
+ * This file is part of YAWL. YAWL is free software: you can
+ * redistribute it and/or modify it under the terms of the GNU Lesser
+ * General Public License as published by the Free Software Foundation.
+ *
+ * YAWL is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+ * or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General
+ * Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with YAWL. If not, see <http://www.gnu.org/licenses/>.
+ */
+
+package org.yawlfoundation.yawl.aspectService;
+
+import java.io.Serializable;
+import java.util.List;
+
+import org.hibernate.Query;
+import org.hibernate.Transaction;
+//import org.yawlfoundation.yawl.engine.interfce.WorkItemRecord;
+
+/**
+ * This class is a thin client of HibernateEngine that implements methods for 
+ * Organisational Data CRUD.
+ *
+ *  @author Michael Adams
+ *  v0.1, 03/08/2007
+ *  //is customized for the Aspect Service 
+ *  @author amin Jalali
+ *  @date 19/10/2012
+ */
+
+public final class Persister implements Serializable {
+
+    private HibernateEngine _db ;
+    private static Persister _me;
+
+    // persistence actions
+    private static final int _UPDATE = HibernateEngine.DB_UPDATE;
+    private static final int _DELETE = HibernateEngine.DB_DELETE;
+    private static final int _INSERT = HibernateEngine.DB_INSERT;
+
+
+    private Persister() {
+        _db = HibernateEngine.getInstance(true) ; 
+    }
+
+    // only want one persister instance at runtime
+    public static Persister getInstance() {
+        if (_me == null) _me = new Persister();
+        return _me ;
+
+    }
+
+   /*******************************************************************************/
+
+    public List select(Object obj) {
+        return select(obj.getClass().getName());
+    }
+
+    public List select(String className) {
+        return _db.getObjectsForClass(className);
+    }
+
+    public List selectWhere(String className, String whereClause) {
+       return _db.getObjectsForClassWhere(className, whereClause) ;
+    }
+
+    public List execQuery(String query) {
+        return _db.execQuery(query);
+    }
+
+    public int execUpdate(String statement) {
+        return _db.execUpdate(statement);
+    }
+
+    public int execUpdate(String statement, boolean commit) {
+        return _db.execUpdate(statement, commit);
+    }
+
+    public Query createQuery(String query) {
+        return _db.createQuery(query);
+    }
+
+    public Transaction beginTransaction() { return _db.beginTransaction(); }
+
+    public Transaction getOrBeginTransaction() { return _db.getOrBeginTransaction(); }
+
+    public Object load(Class claz, Serializable key) { return _db.load(claz, key); }
+
+    public Object get(Class claz, Serializable key) { return _db.get(claz, key); }
+
+    public void commit() { _db.commit(); }
+
+    public void rollback() { _db.rollback(); }
+
+    public void closeDB() { _db.closeFactory(); }
+
+
+    public Object selectScalar(String className, String id) {
+       Object retObj ;
+       if (className.endsWith("Participant"))
+           retObj = _db.selectScalar(className,"_resourceID", id);
+       else if (className.endsWith("UserPrivileges"))
+           retObj = _db.selectScalar(className,"_participantID", id);
+       else if ((className.endsWith("QueueSet")) ||
+                (className.endsWith("WorkQueue")))
+           retObj = _db.selectScalar(className,"_ownerID", id);
+       else if (className.endsWith("AutoTask"))
+           retObj = _db.selectScalar(className,"_wirID", id);
+       else
+           retObj = _db.selectScalar(className,"_id", id);
+       return retObj ;
+    }
+
+    public void update(Object obj) { _db.exec(obj, _UPDATE); }
+
+    public void delete(Object obj) { _db.exec(obj, _DELETE); }
+
+    public void insert(Object obj) { _db.exec(obj, _INSERT); }
+
+    public void update(Object obj, Transaction tx) { _db.exec(obj, _UPDATE, tx); }
+
+    public void delete(Object obj, Transaction tx) { _db.exec(obj, _DELETE, tx); }
+
+    public void insert(Object obj, Transaction tx) { _db.exec(obj, _INSERT, tx); }
+
+    public void update(Object obj, boolean commit) { _db.exec(obj, _UPDATE, commit); }
+
+    public void delete(Object obj, boolean commit) { _db.exec(obj, _DELETE, commit); }
+
+    public void insert(Object obj, boolean commit) { _db.exec(obj, _INSERT, commit); }
+    
+    //public Object getAll(Class claz) { return _db.get(claz, key); }
+
+}
